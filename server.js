@@ -39,7 +39,92 @@ const main = async () => {
                     error: error.message
                 });
             }
-        })
+        });
+        app.get("/livres/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await pool.query(
+            "SELECT * FROM livres WHERE id = $1",
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Livre non trouvé"
+            });
+        }
+
+        res.status(200).json(result.rows[0]);
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+});
+app.put("/livres/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {  name, authorName, category, isAvailable, created_at  } = req.body;
+
+        const result = await pool.query(
+            `UPDATE livres
+             SET name=$1,
+                 author_name=$2,
+                 category=$3,
+                 is_available=$4,
+                 created_at=$5
+             WHERE id=$6
+             RETURNING *`,
+            [ name, authorName, category, isAvailable, created_at , id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Livre non trouvé"
+            });
+        }
+
+        res.status(200).json({
+            message: "Livre modifié avec succès",
+            livre: result.rows[0]
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+}); 
+ app.delete("/livres/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await pool.query(
+            "DELETE FROM livres WHERE id = $1 RETURNING *",
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Book not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Book deleted successfully"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+});
         app.post("/livres", async (req, res) => {
             try {
                 const { name, authorName, category, isAvailable, created_at } = req.body
